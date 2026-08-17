@@ -1,0 +1,64 @@
+# GoReleaser config for quaere. Pure-Go (no cgo), so it cross-compiles for
+# macOS and Linux from a single Linux runner, publishes a GitHub Release, and
+# updates a Homebrew tap formula.
+#
+# Docs: https://goreleaser.com
+version: 2
+
+project_name: quaere
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: quaere
+    main: .
+    binary: quaere
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/aurelio-labs/quaere/internal/cmd.version={{ .Version }}
+
+archives:
+  - id: quaere
+    ids:
+      - quaere
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+brews:
+  - name: quaere
+    ids:
+      - quaere
+    repository:
+      owner: aurelio-labs
+      name: homebrew-quaere
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: "https://github.com/aurelio-labs/quaere"
+    description: "Terminal SQL client for PostgreSQL and Cloud SQL (IAM)"
+    license: "MIT"
+    install: |
+      bin.install "quaere"
+    test: |
+      system "#{bin}/quaere", "--version"
