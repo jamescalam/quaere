@@ -47,9 +47,12 @@ changelog:
       - "^test:"
       - "^chore:"
 
-brews:
+homebrew_casks:
   - name: quaere
     ids:
+      - quaere
+    # The binary(ies) inside the archive to link onto the PATH.
+    binaries:
       - quaere
     repository:
       owner: aurelio-labs
@@ -57,8 +60,10 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: "https://github.com/aurelio-labs/quaere"
     description: "Terminal SQL client for PostgreSQL and Cloud SQL (IAM)"
-    license: "MIT"
-    install: |
-      bin.install "quaere"
-    test: |
-      system "#{bin}/quaere", "--version"
+    # The binary is unsigned, so strip the Gatekeeper quarantine flag on install
+    # (casks have no default for this) — otherwise the first run is blocked as
+    # coming from an "unidentified developer".
+    hooks:
+      post:
+        install: |
+          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/quaere"]
